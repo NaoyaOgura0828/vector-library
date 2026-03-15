@@ -18,7 +18,7 @@
     },
     {
       "ParameterKey": "SearchApiTimeout",
-      "ParameterValue": "30"
+      "ParameterValue": "120"
     },
     {
       "ParameterKey": "SearchApiEphemeralStorageSize",
