@@ -1,0 +1,205 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: IAM Role for vector-library
+
+Parameters:
+  SystemName:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  EnvType:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  ResourceRegion:
+    Type: String
+    Description: リソースがデプロイされるリージョン
+
+Resources:
+  IamRoleLambdaSearchApi:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${SystemName}-${EnvType}-iam-role-lambda-search-api
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-iam-role-lambda-search-api
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  IamPolicyLambdaSearchApiS3Read:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${SystemName}-${EnvType}-iam-policy-lambda-search-api-s3-read
+      Roles:
+        - !Ref IamRoleLambdaSearchApi
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:aws:s3:::${SystemName}-${EnvType}-rag-data-${AWS::AccountId}
+              - !Sub arn:aws:s3:::${SystemName}-${EnvType}-rag-data-${AWS::AccountId}/*
+
+  IamRoleLambdaBuildIndex:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${SystemName}-${EnvType}-iam-role-lambda-build-index
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-iam-role-lambda-build-index
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  IamPolicyLambdaBuildIndexS3:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${SystemName}-${EnvType}-iam-policy-lambda-build-index-s3
+      Roles:
+        - !Ref IamRoleLambdaBuildIndex
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:ListBucket
+            Resource:
+              - !Sub arn:aws:s3:::${SystemName}-${EnvType}-rag-data-${AWS::AccountId}
+              - !Sub arn:aws:s3:::${SystemName}-${EnvType}-rag-data-${AWS::AccountId}/*
+          - Effect: Allow
+            Action:
+              - s3:PutObject
+            Resource:
+              - !Sub arn:aws:s3:::${SystemName}-${EnvType}-rag-data-${AWS::AccountId}/processed/*
+
+  IamRoleCodeBuildImagePush:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${SystemName}-${EnvType}-iam-role-codebuild-image-push
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-iam-role-codebuild-image-push
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  IamPolicyCodeBuildImagePush:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${SystemName}-${EnvType}-iam-policy-codebuild-image-push
+      Roles:
+        - !Ref IamRoleCodeBuildImagePush
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:PutLogEvents
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - ecr:GetAuthorizationToken
+            Resource: "*"
+          - Effect: Allow
+            Action:
+              - ecr:BatchCheckLayerAvailability
+              - ecr:GetDownloadUrlForLayer
+              - ecr:BatchGetImage
+              - ecr:PutImage
+              - ecr:InitiateLayerUpload
+              - ecr:UploadLayerPart
+              - ecr:CompleteLayerUpload
+            Resource:
+              - !Sub arn:aws:ecr:${ResourceRegion}:${AWS::AccountId}:repository/${SystemName}-${EnvType}-search-api
+              - !Sub arn:aws:ecr:${ResourceRegion}:${AWS::AccountId}:repository/${SystemName}-${EnvType}-build-index
+          - Effect: Allow
+            Action:
+              - lambda:UpdateFunctionCode
+            Resource:
+              - !Sub arn:aws:lambda:${ResourceRegion}:${AWS::AccountId}:function:${SystemName}-${EnvType}-lambda-search-api
+              - !Sub arn:aws:lambda:${ResourceRegion}:${AWS::AccountId}:function:${SystemName}-${EnvType}-lambda-build-index
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:PutObject
+            Resource:
+              - !Sub arn:aws:s3:::${SystemName}-${EnvType}-codepipeline-artifact-${AWS::AccountId}/*
+
+  IamRoleCodePipeline:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub ${SystemName}-${EnvType}-iam-role-codepipeline
+      AssumeRolePolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-iam-role-codepipeline
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  IamPolicyCodePipeline:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyName: !Sub ${SystemName}-${EnvType}-iam-policy-codepipeline
+      Roles:
+        - !Ref IamRoleCodePipeline
+      PolicyDocument:
+        Version: 2012-10-17
+        Statement:
+          - Effect: Allow
+            Action:
+              - s3:GetObject
+              - s3:GetObjectVersion
+              - s3:PutObject
+            Resource:
+              - !Sub arn:aws:s3:::${SystemName}-${EnvType}-codepipeline-artifact-${AWS::AccountId}/*
+          - Effect: Allow
+            Action:
+              - codebuild:BatchGetBuilds
+              - codebuild:StartBuild
+            Resource:
+              - !Sub arn:aws:codebuild:${ResourceRegion}:${AWS::AccountId}:project/${SystemName}-${EnvType}-codebuild-image-push
+          - Effect: Allow
+            Action:
+              - codeconnections:UseConnection
+            Resource: "*"

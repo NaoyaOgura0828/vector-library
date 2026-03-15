@@ -1,0 +1,61 @@
+[project]
+name = "vector-library"
+version = "0.1.0"
+description = "AWS Lambda + S3 + FAISS を用いた低コスト RAG 検索基盤"
+requires-python = ">=3.14"
+dependencies = [
+    "boto3>=1.35.0",
+    "faiss-cpu>=1.9.0",
+    "numpy>=1.26.0",
+    "sentence-transformers>=3.3.0",
+    "pypdf>=5.1.0",
+    "torch>=2.0.0",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.3.0",
+    "pytest-cov>=6.0.0",
+    "pytest-mock>=3.14.0",
+    "ruff>=0.8.0",
+    "mypy>=1.13.0",
+    "moto[s3]>=5.0.0",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["application"]
+
+[tool.ruff]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "N", "W", "UP", "B", "SIM"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+addopts = "-v --tb=short"
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+
+[tool.coverage.run]
+source = ["application"]
+omit = ["tests/*"]
+
+[tool.coverage.report]
+fail_under = 80

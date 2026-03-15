@@ -1,0 +1,24 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "SystemName",
+      "ParameterValue": "vl"
+    },
+    {
+      "ParameterKey": "EnvType",
+      "ParameterValue": "dev"
+    },
+    {
+      "ParameterKey": "GitHubConnectionArn",
+      "ParameterValue": "arn:aws:codeconnections:us-west-2:891376986027:connection/a9dc4994-9222-432a-b96c-91d1799ccd3c"
+    },
+    {
+      "ParameterKey": "GitHubFullRepositoryId",
+      "ParameterValue": "NaoyaOgura0828/vector-library"
+    },
+    {
+      "ParameterKey": "GitHubBranchName",
+      "ParameterValue": "main"
+    }
+  ]
+}

@@ -1,0 +1,132 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: ECR for vector-library
+
+Parameters:
+  SystemName:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  EnvType:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  ImageTagMutability:
+    Type: String
+    AllowedValues:
+      - MUTABLE
+      - IMMUTABLE
+  MaxImageCount:
+    Type: Number
+  isEmptyOnDelete:
+    Type: String
+    AllowedValues:
+      - true
+      - false
+
+Resources:
+  EcrRepositorySearchApi:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${SystemName}-${EnvType}-search-api
+      EmptyOnDelete: !Ref isEmptyOnDelete
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: !Ref ImageTagMutability
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep latest tagged images and referenced images",
+                "selection": {
+                  "tagStatus": "tagged",
+                  "tagPrefixList": ["latest"],
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 999
+                },
+                "action": {
+                  "type": "expire"
+                }
+              },
+              {
+                "rulePriority": 2,
+                "description": "Expire all images except latest tagged",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": ${MaxImageCount}
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-ecr-search-api
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  EcrRepositoryBuildIndex:
+    Type: AWS::ECR::Repository
+    Properties:
+      RepositoryName: !Sub ${SystemName}-${EnvType}-build-index
+      EmptyOnDelete: !Ref isEmptyOnDelete
+      ImageScanningConfiguration:
+        ScanOnPush: true
+      ImageTagMutability: !Ref ImageTagMutability
+      EncryptionConfiguration:
+        EncryptionType: AES256
+      LifecyclePolicy:
+        LifecyclePolicyText: !Sub |
+          {
+            "rules": [
+              {
+                "rulePriority": 1,
+                "description": "Keep latest tagged images and referenced images",
+                "selection": {
+                  "tagStatus": "tagged",
+                  "tagPrefixList": ["latest"],
+                  "countType": "imageCountMoreThan",
+                  "countNumber": 999
+                },
+                "action": {
+                  "type": "expire"
+                }
+              },
+              {
+                "rulePriority": 2,
+                "description": "Expire all images except latest tagged",
+                "selection": {
+                  "tagStatus": "any",
+                  "countType": "imageCountMoreThan",
+                  "countNumber": ${MaxImageCount}
+                },
+                "action": {
+                  "type": "expire"
+                }
+              }
+            ]
+          }
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-ecr-build-index
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+Outputs:
+  EcrRepositorySearchApiUri:
+    Value: !GetAtt EcrRepositorySearchApi.RepositoryUri
+    Export:
+      Name: !Sub ${SystemName}-${EnvType}-ecr-search-api-uri
+
+  EcrRepositoryBuildIndexUri:
+    Value: !GetAtt EcrRepositoryBuildIndex.RepositoryUri
+    Export:
+      Name: !Sub ${SystemName}-${EnvType}-ecr-build-index-uri

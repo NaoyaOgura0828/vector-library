@@ -1,0 +1,48 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "SystemName",
+      "ParameterValue": "vl"
+    },
+    {
+      "ParameterKey": "EnvType",
+      "ParameterValue": "dev"
+    },
+    {
+      "ParameterKey": "SearchApiImageTag",
+      "ParameterValue": "latest"
+    },
+    {
+      "ParameterKey": "SearchApiMemorySize",
+      "ParameterValue": "1024"
+    },
+    {
+      "ParameterKey": "SearchApiTimeout",
+      "ParameterValue": "30"
+    },
+    {
+      "ParameterKey": "SearchApiEphemeralStorageSize",
+      "ParameterValue": "1024"
+    },
+    {
+      "ParameterKey": "BuildIndexImageTag",
+      "ParameterValue": "latest"
+    },
+    {
+      "ParameterKey": "BuildIndexMemorySize",
+      "ParameterValue": "2048"
+    },
+    {
+      "ParameterKey": "BuildIndexTimeout",
+      "ParameterValue": "900"
+    },
+    {
+      "ParameterKey": "BuildIndexEphemeralStorageSize",
+      "ParameterValue": "2048"
+    },
+    {
+      "ParameterKey": "LogLevel",
+      "ParameterValue": "DEBUG"
+    }
+  ]
+}

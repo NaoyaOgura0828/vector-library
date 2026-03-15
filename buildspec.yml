@@ -1,0 +1,35 @@
+version: 0.2
+
+env:
+  variables:
+    DOCKER_BUILDKIT: "1"
+
+phases:
+  pre_build:
+    commands:
+      - echo "ECR ログイン"
+      - aws ecr get-login-password --region ${AWS_DEFAULT_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_DEFAULT_REGION}.amazonaws.com
+      - COMMIT_HASH=$(echo ${CODEBUILD_RESOLVED_SOURCE_VERSION} | cut -c 1-8)
+      - IMAGE_TAG=${COMMIT_HASH:-latest}
+
+  build:
+    commands:
+      - echo "search-api Docker イメージビルド"
+      - docker build --provenance=false -f application/core/rag_search_api/Dockerfile -t ${ECR_SEARCH_API_URI}:latest .
+      - docker tag ${ECR_SEARCH_API_URI}:latest ${ECR_SEARCH_API_URI}:${IMAGE_TAG}
+      - echo "build-index Docker イメージビルド"
+      - docker build --provenance=false -f application/core/build_rag_index/Dockerfile -t ${ECR_BUILD_INDEX_URI}:latest .
+      - docker tag ${ECR_BUILD_INDEX_URI}:latest ${ECR_BUILD_INDEX_URI}:${IMAGE_TAG}
+
+  post_build:
+    commands:
+      - echo "ECR へプッシュ (search-api)"
+      - docker push ${ECR_SEARCH_API_URI}:latest
+      - docker push ${ECR_SEARCH_API_URI}:${IMAGE_TAG}
+      - echo "ECR へプッシュ (build-index)"
+      - docker push ${ECR_BUILD_INDEX_URI}:latest
+      - docker push ${ECR_BUILD_INDEX_URI}:${IMAGE_TAG}
+      - echo "Lambda 関数コードを更新"
+      - aws lambda update-function-code --function-name ${LAMBDA_SEARCH_API_NAME} --image-uri ${ECR_SEARCH_API_URI}:${IMAGE_TAG}
+      - aws lambda update-function-code --function-name ${LAMBDA_BUILD_INDEX_NAME} --image-uri ${ECR_BUILD_INDEX_URI}:${IMAGE_TAG}
+      - echo "デプロイ完了"

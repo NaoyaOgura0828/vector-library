@@ -1,0 +1,54 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: EventBridge for vector-library
+
+Parameters:
+  SystemName:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  EnvType:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  EventRuleState:
+    Type: String
+    AllowedValues:
+      - ENABLED
+      - DISABLED
+
+Resources:
+  EventRuleS3PdfUpload:
+    Type: AWS::Events::Rule
+    Properties:
+      Name: !Sub ${SystemName}-${EnvType}-eventbridge-s3-pdf-upload
+      Description: S3 に PDF がアップロードされた際に build-index Lambda を起動
+      State: !Ref EventRuleState
+      EventPattern:
+        source:
+          - aws.s3
+        detail-type:
+          - Object Created
+        detail:
+          bucket:
+            name:
+              - !Sub ${SystemName}-${EnvType}-rag-data-${AWS::AccountId}
+          object:
+            key:
+              - prefix: documents/
+              - suffix: .pdf
+      Targets:
+        - Id: LambdaBuildIndexTarget
+          Arn:
+            Fn::ImportValue: !Sub ${SystemName}-${EnvType}-lambda-build-index-arn
+
+  LambdaPermissionEventBridge:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Sub ${SystemName}-${EnvType}-lambda-build-index
+      Action: lambda:InvokeFunction
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt EventRuleS3PdfUpload.Arn
+
+Outputs:
+  EventRuleS3PdfUploadArn:
+    Value: !GetAtt EventRuleS3PdfUpload.Arn
+    Export:
+      Name: !Sub ${SystemName}-${EnvType}-eventbridge-s3-pdf-upload-arn

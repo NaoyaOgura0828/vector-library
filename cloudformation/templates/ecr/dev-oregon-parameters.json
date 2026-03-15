@@ -1,0 +1,24 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "SystemName",
+      "ParameterValue": "vl"
+    },
+    {
+      "ParameterKey": "EnvType",
+      "ParameterValue": "dev"
+    },
+    {
+      "ParameterKey": "ImageTagMutability",
+      "ParameterValue": "MUTABLE"
+    },
+    {
+      "ParameterKey": "MaxImageCount",
+      "ParameterValue": "10"
+    },
+    {
+      "ParameterKey": "isEmptyOnDelete",
+      "ParameterValue": "true"
+    }
+  ]
+}

@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Lambda for vector-library
+
+Parameters:
+  SystemName:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  EnvType:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  SearchApiImageTag:
+    Type: String
+  SearchApiMemorySize:
+    Type: Number
+  SearchApiTimeout:
+    Type: Number
+  SearchApiEphemeralStorageSize:
+    Type: Number
+  BuildIndexImageTag:
+    Type: String
+  BuildIndexMemorySize:
+    Type: Number
+  BuildIndexTimeout:
+    Type: Number
+  BuildIndexEphemeralStorageSize:
+    Type: Number
+  LogLevel:
+    Type: String
+
+Resources:
+  LambdaSearchApi:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${SystemName}-${EnvType}-lambda-search-api
+      PackageType: Image
+      Code:
+        ImageUri: !Sub
+          - ${RepositoryUri}:${ImageTag}
+          - RepositoryUri:
+              Fn::ImportValue: !Sub ${SystemName}-${EnvType}-ecr-search-api-uri
+            ImageTag: !Ref SearchApiImageTag
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SystemName}-${EnvType}-iam-role-lambda-search-api
+      MemorySize: !Ref SearchApiMemorySize
+      Timeout: !Ref SearchApiTimeout
+      EphemeralStorage:
+        Size: !Ref SearchApiEphemeralStorageSize
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub ${SystemName}-${EnvType}-rag-data-${AWS::AccountId}
+          LOG_LEVEL: !Ref LogLevel
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-lambda-search-api
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  LambdaSearchApiLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${SystemName}-${EnvType}-lambda-search-api
+      RetentionInDays: 14
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-logs-lambda-search-api
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  LambdaPermissionApiGateway:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !Ref LambdaSearchApi
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+      SourceArn: !Sub arn:aws:execute-api:${AWS::Region}:${AWS::AccountId}:*
+
+  LambdaBuildIndex:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub ${SystemName}-${EnvType}-lambda-build-index
+      PackageType: Image
+      Code:
+        ImageUri: !Sub
+          - ${RepositoryUri}:${ImageTag}
+          - RepositoryUri:
+              Fn::ImportValue: !Sub ${SystemName}-${EnvType}-ecr-build-index-uri
+            ImageTag: !Ref BuildIndexImageTag
+      Role: !Sub arn:aws:iam::${AWS::AccountId}:role/${SystemName}-${EnvType}-iam-role-lambda-build-index
+      MemorySize: !Ref BuildIndexMemorySize
+      Timeout: !Ref BuildIndexTimeout
+      EphemeralStorage:
+        Size: !Ref BuildIndexEphemeralStorageSize
+      Environment:
+        Variables:
+          S3_BUCKET_NAME: !Sub ${SystemName}-${EnvType}-rag-data-${AWS::AccountId}
+          LOG_LEVEL: !Ref LogLevel
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-lambda-build-index
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  LambdaBuildIndexLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${SystemName}-${EnvType}-lambda-build-index
+      RetentionInDays: 14
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-logs-lambda-build-index
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+Outputs:
+  LambdaSearchApiArn:
+    Value: !GetAtt LambdaSearchApi.Arn
+    Export:
+      Name: !Sub ${SystemName}-${EnvType}-lambda-search-api-arn
+
+  LambdaBuildIndexArn:
+    Value: !GetAtt LambdaBuildIndex.Arn
+    Export:
+      Name: !Sub ${SystemName}-${EnvType}-lambda-build-index-arn
+

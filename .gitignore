@@ -1,0 +1,48 @@
+# 環境・秘密情報
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+*.egg
+dist/
+build/
+.venv/
+venv/
+
+# uv
+.python-version
+
+# テスト・品質
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+htmlcov/
+.coverage
+coverage.xml
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# FAISS
+*.faiss
+
+# Docker
+docker-compose.override.yml
+
+# Terraform
+.terraform/
+*.tfstate*

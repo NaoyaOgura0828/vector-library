@@ -1,0 +1,19 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "SystemName",
+      "ParameterValue": "vl"
+    },
+    {
+      "ParameterKey": "EnvType",
+      "ParameterValue": "dev"
+    },
+    {
+      "ParameterKey": "ResourceRegion",
+      "ParameterValue": "us-west-2"
+    }
+  ],
+  "Capabilities": [
+    "CAPABILITY_NAMED_IAM"
+  ]
+}

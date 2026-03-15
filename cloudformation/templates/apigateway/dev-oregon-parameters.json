@@ -1,0 +1,16 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "SystemName",
+      "ParameterValue": "vl"
+    },
+    {
+      "ParameterKey": "EnvType",
+      "ParameterValue": "dev"
+    },
+    {
+      "ParameterKey": "StageName",
+      "ParameterValue": "v1"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "SystemName",
+      "ParameterValue": "vl"
+    },
+    {
+      "ParameterKey": "EnvType",
+      "ParameterValue": "prod"
+    },
+    {
+      "ParameterKey": "GitHubConnectionArn",
+      "ParameterValue": "arn:aws:codeconnections:us-west-2:123456789012:connection/xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+    },
+    {
+      "ParameterKey": "GitHubFullRepositoryId",
+      "ParameterValue": "your-github-owner/vector-library"
+    },
+    {
+      "ParameterKey": "GitHubBranchName",
+      "ParameterValue": "main"
+    }
+  ]
+}

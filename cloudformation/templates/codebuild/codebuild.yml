@@ -1,0 +1,52 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: CodeBuild for vector-library
+
+Parameters:
+  SystemName:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+  EnvType:
+    Type: String
+    AllowedPattern: '[a-z0-9-]*'
+
+Resources:
+  CodeBuildImagePush:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub ${SystemName}-${EnvType}-codebuild-image-push
+      Description: Docker build, ECR push, Lambda update
+      ServiceRole: !Sub arn:aws:iam::${AWS::AccountId}:role/${SystemName}-${EnvType}-iam-role-codebuild-image-push
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        Type: LINUX_CONTAINER
+        ComputeType: BUILD_GENERAL1_MEDIUM
+        Image: aws/codebuild/amazonlinux2-x86_64-standard:5.0
+        PrivilegedMode: true
+        EnvironmentVariables:
+          - Name: AWS_ACCOUNT_ID
+            Value: !Ref AWS::AccountId
+          - Name: AWS_DEFAULT_REGION
+            Value: !Ref AWS::Region
+          - Name: ECR_SEARCH_API_URI
+            Value:
+              Fn::ImportValue: !Sub ${SystemName}-${EnvType}-ecr-search-api-uri
+          - Name: ECR_BUILD_INDEX_URI
+            Value:
+              Fn::ImportValue: !Sub ${SystemName}-${EnvType}-ecr-build-index-uri
+          - Name: LAMBDA_SEARCH_API_NAME
+            Value: !Sub ${SystemName}-${EnvType}-lambda-search-api
+          - Name: LAMBDA_BUILD_INDEX_NAME
+            Value: !Sub ${SystemName}-${EnvType}-lambda-build-index
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: buildspec.yml
+      TimeoutInMinutes: 30
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-codebuild-image-push
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+

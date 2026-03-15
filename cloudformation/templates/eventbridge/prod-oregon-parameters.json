@@ -1,0 +1,16 @@
+{
+  "Parameters": [
+    {
+      "ParameterKey": "SystemName",
+      "ParameterValue": "vl"
+    },
+    {
+      "ParameterKey": "EnvType",
+      "ParameterValue": "prod"
+    },
+    {
+      "ParameterKey": "EventRuleState",
+      "ParameterValue": "ENABLED"
+    }
+  ]
+}
