@@ -98,6 +98,9 @@ vector-library/
 │       ├── eventbridge/
 │       ├── codebuild/
 │       └── codepipeline/
+├── mcp/
+│   ├── mcp_server.py
+│   └── setup_mcp.sh
 ├── buildspec.yml
 ├── pyproject.toml
 └── Makefile
@@ -298,7 +301,7 @@ POST /v1/search
 ### セットアップ
 
 ```bash
-./setup_mcp.sh dev
+./mcp/setup_mcp.sh dev
 ```
 
 スクリプトが AWS CLI で以下を自動取得し、MCP サーバーを登録します:

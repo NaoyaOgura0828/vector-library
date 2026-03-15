@@ -37,6 +37,9 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
+# PDF
+*.pdf
+
 # FAISS
 *.faiss
 
