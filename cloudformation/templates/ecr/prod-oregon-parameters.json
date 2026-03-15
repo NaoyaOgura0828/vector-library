@@ -14,7 +14,7 @@
     },
     {
       "ParameterKey": "MaxImageCount",
-      "ParameterValue": "10"
+      "ParameterValue": "1"
     },
     {
       "ParameterKey": "isEmptyOnDelete",

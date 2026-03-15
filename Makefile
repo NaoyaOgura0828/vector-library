@@ -28,7 +28,7 @@ invoke-build-index: ## build-index Lambda を呼び出してインデックス�
 	aws lambda invoke \
 		--function-name $${LAMBDA_BUILD_INDEX_NAME:-vl-dev-lambda-build-index} \
 		--region $${AWS_REGION:-us-west-2} \
-		--profile $${AWS_PROFILE:-default} \
+		--profile $${AWS_PROFILE:-Sandbox} \
 		--cli-read-timeout 900 \
 		--payload '{}' \
 		/dev/stdout

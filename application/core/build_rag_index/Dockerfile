@@ -19,6 +19,9 @@ RUN uv export --frozen --no-dev --no-editable -o requirements.txt && \
 # 埋め込みモデルを事前ダウンロード（オフラインで利用可能にする）
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('all-MiniLM-L6-v2')"
 
+# 実行時は HuggingFace Hub へのアクセスを無効化（事前ダウンロード済みモデルのみ使用）
+ENV HF_HUB_OFFLINE=1
+
 COPY application/core/build_rag_index/ ${LAMBDA_TASK_ROOT}/build_rag_index/
 
 CMD ["build_rag_index.handler.lambda_handler"]
