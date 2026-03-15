@@ -48,12 +48,13 @@ flowchart TB
 
 | カテゴリ | 技術 |
 |----------|------|
-| 言語 | Python 3.12 |
+| 言語 | Python 3.14 |
 | パッケージ管理 | uv |
 | ベクトル検索 | FAISS (IndexFlatIP + cosine similarity) |
 | 埋め込みモデル | sentence-transformers (all-MiniLM-L6-v2) |
+| 推論ランタイム | PyTorch (CPU) |
 | インフラ | AWS Lambda (Container) x2, API Gateway, S3, ECR, EventBridge |
-| CI/CD | CodePipeline, CodeBuild |
+| CI/CD | CodePipeline, CodeBuild, CodeConnections |
 | IaC | CloudFormation |
 
 ## アプリケーション構成
@@ -106,11 +107,10 @@ vector-library/
 
 ### 前提条件
 
-- Python 3.12
+- Python 3.14
 - uv
 - Docker
-- AWS CLI (設定済み)
-- jq
+- AWS CLI (SSO 設定済み)
 
 ### 開発環境
 
@@ -133,7 +133,7 @@ make lint
 S3 バケットの `documents/` に PDF をアップロードすると、EventBridge が自動的に `build_rag_index` Lambda を起動してインデックスを構築します。
 
 ```bash
-aws s3 cp your-document.pdf s3://your-rag-bucket-name/documents/
+aws s3 cp your-document.pdf s3://vl-dev-rag-data-<account-id>/documents/
 ```
 
 S3 の `processed/` に `index.faiss` と `metadata.json` が自動生成されます。
@@ -163,20 +163,24 @@ cd cloudformation
 ```
 
 > [!IMPORTANT]
-> - デプロイ前に各パラメータファイルの値（GitHub 接続 ARN 等）を環境に合わせて更新してください。
-> - `create_stacks.sh` / `exec_change_sets.sh` 内のコメントアウトを解除して実行対象を指定してください。
-> - PROFILE 変数を使用する AWS プロファイルに変更してください。
+> - 各シェルスクリプトは実行時に AWS SSO ログインを自動で行います。
+> - `create_stacks.sh` 内の構築対象リソースのコメントアウトを解除して実行してください。
+> - CodePipeline デプロイ前に GitHub 接続の ARN をパラメータファイルに設定してください。
 
 ### デプロイ順序
 
-1. S3
-2. IAM Role
-3. ECR
-4. Lambda
-5. API Gateway
-6. EventBridge
-7. CodeBuild
-8. CodePipeline
+`create_stacks.sh` 内の実行順序:
+
+1. `create_stack s3` — S3 バケット作成
+2. `create_s3_directories` — `documents/`, `processed/` プレフィックス作成
+3. `create_stack iam-role` — IAM ロール作成（Virginia にデプロイ）
+4. `create_stack ecr` — ECR リポジトリ作成
+5. `push_initial_images` — 初期 Docker イメージをビルド・プッシュ（Lambda スタック作成に必要）
+6. `create_stack lambda` — Lambda 関数作成
+7. `create_stack apigateway` — API Gateway 作成
+8. `create_stack eventbridge` — EventBridge ルール作成
+9. `create_stack codebuild` — CodeBuild プロジェクト作成
+10. `create_stack codepipeline` — CodePipeline 作成
 
 ### スタック命名規則
 
@@ -189,12 +193,13 @@ cd cloudformation
 ### Docker イメージの手動ビルド・プッシュ
 
 ```bash
-# ビルド
+# ビルド（--provenance=false は Makefile に設定済み）
 make build-search-api
 make build-build-index
 
 # ECR ログイン
-aws ecr get-login-password --region us-west-2 | docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-west-2.amazonaws.com
+aws ecr get-login-password --region us-west-2 --profile Sandbox | \
+    docker login --username AWS --password-stdin <account-id>.dkr.ecr.us-west-2.amazonaws.com
 
 # search-api: タグ付け・プッシュ
 docker tag vl-search-api:latest <account-id>.dkr.ecr.us-west-2.amazonaws.com/vl-dev-search-api:latest
@@ -207,11 +212,13 @@ docker push <account-id>.dkr.ecr.us-west-2.amazonaws.com/vl-dev-build-index:late
 # Lambda 更新
 aws lambda update-function-code \
     --function-name vl-dev-lambda-search-api \
-    --image-uri <account-id>.dkr.ecr.us-west-2.amazonaws.com/vl-dev-search-api:latest
+    --image-uri <account-id>.dkr.ecr.us-west-2.amazonaws.com/vl-dev-search-api:latest \
+    --profile Sandbox
 
 aws lambda update-function-code \
     --function-name vl-dev-lambda-build-index \
-    --image-uri <account-id>.dkr.ecr.us-west-2.amazonaws.com/vl-dev-build-index:latest
+    --image-uri <account-id>.dkr.ecr.us-west-2.amazonaws.com/vl-dev-build-index:latest \
+    --profile Sandbox
 ```
 
 ## API 仕様
@@ -278,6 +285,51 @@ POST /v1/search
 
 例: `manual.pdf#p3#c2` → manual.pdf の 3 ページ目の 3 番目のチャンク
 
+## Claude Code MCP サーバー
+
+本システムの RAG 検索 API を Claude Code の MCP サーバーとして利用できます。登録すると、Claude Code の全プロジェクトから検索ツールとして利用可能になります。
+
+### 前提条件
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) インストール済み
+- uv インストール済み
+- API Gateway デプロイ済み（エンドポイント URL と API Key が必要）
+
+### セットアップ
+
+```bash
+./setup_mcp.sh dev
+```
+
+スクリプトが AWS CLI で以下を自動取得し、MCP サーバーを登録します:
+
+- API Gateway エンドポイント URL（CloudFormation エクスポートから取得）
+- API Key（API Gateway から取得）
+
+### 確認
+
+```bash
+# 登録済み MCP サーバー一覧
+claude mcp list
+
+# 詳細確認
+claude mcp get vector-library
+```
+
+### 利用方法
+
+Claude Code 内で自然言語で検索を依頼できます:
+
+```
+「vector-library の search ツールで 'Lambda Container デプロイ方法' を検索して」
+```
+
+### 削除
+
+```bash
+claude mcp remove vector-library --scope user
+```
+
 ## CI/CD フロー
 
 ```mermaid
@@ -323,6 +375,6 @@ aws codeconnections list-connections --profile Sandbox --region us-west-2
 ```json
 {
   "ParameterKey": "GitHubConnectionArn",
-  "ParameterValue": "arn:aws:codeconnections:us-west-2:123456789012:connection/実際のID"
+  "ParameterValue": "arn:aws:codeconnections:us-west-2:<account-id>:connection/<connection-id>"
 }
 ```

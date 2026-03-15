@@ -42,6 +42,7 @@ Resources:
       ResourceId: !Ref SearchResource
       HttpMethod: POST
       AuthorizationType: NONE
+      ApiKeyRequired: true
       Integration:
         Type: AWS_PROXY
         IntegrationHttpMethod: POST
@@ -77,6 +78,49 @@ Resources:
             method.response.header.Access-Control-Allow-Headers: true
             method.response.header.Access-Control-Allow-Methods: true
             method.response.header.Access-Control-Allow-Origin: true
+
+  ApiKey:
+    Type: AWS::ApiGateway::ApiKey
+    DependsOn: ApiStage
+    Properties:
+      Name: !Sub ${SystemName}-${EnvType}-apigateway-api-key
+      Enabled: true
+      StageKeys:
+        - RestApiId: !Ref RestApi
+          StageName: !Ref StageName
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-apigateway-api-key
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  UsagePlan:
+    Type: AWS::ApiGateway::UsagePlan
+    DependsOn: ApiStage
+    Properties:
+      UsagePlanName: !Sub ${SystemName}-${EnvType}-apigateway-usage-plan
+      ApiStages:
+        - ApiId: !Ref RestApi
+          Stage: !Ref StageName
+      Throttle:
+        BurstLimit: 50
+        RateLimit: 100
+      Tags:
+        - Key: Name
+          Value: !Sub ${SystemName}-${EnvType}-apigateway-usage-plan
+        - Key: SystemName
+          Value: !Ref SystemName
+        - Key: EnvType
+          Value: !Ref EnvType
+
+  UsagePlanKey:
+    Type: AWS::ApiGateway::UsagePlanKey
+    Properties:
+      KeyId: !Ref ApiKey
+      KeyType: API_KEY
+      UsagePlanId: !Ref UsagePlan
 
   ApiDeployment:
     Type: AWS::ApiGateway::Deployment

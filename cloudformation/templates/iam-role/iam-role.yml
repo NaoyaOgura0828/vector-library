@@ -202,4 +202,11 @@ Resources:
           - Effect: Allow
             Action:
               - codeconnections:UseConnection
-            Resource: "*"
+              - codeconnections:PassConnection
+              - codeconnections:GetConnection
+              - codestar-connections:UseConnection
+              - codestar-connections:PassConnection
+              - codestar-connections:GetConnection
+            Resource:
+              - !Sub arn:aws:codeconnections:${ResourceRegion}:${AWS::AccountId}:connection/*
+              - !Sub arn:aws:codestar-connections:${ResourceRegion}:${AWS::AccountId}:connection/*
